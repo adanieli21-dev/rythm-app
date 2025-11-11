@@ -108,7 +108,11 @@ export async function deleteSystem(id: string): Promise<void> {
 }
 
 export function getTodayString(): string {
-  return new Date().toISOString().split('T')[0];
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 export async function getLogsForDate(dateString: string): Promise<DailyLog> {
@@ -176,7 +180,7 @@ export async function setSurvivalMode(enabled: boolean): Promise<void> {
   const { error } = await supabase
     .from('user_settings')
     .upsert({
-      user_id: user.id,
+user_id: user.id,
       survival_mode: enabled,
     }, {
       onConflict: 'user_id',
@@ -193,9 +197,7 @@ export function getWeekDates(dateString: string): string[] {
 
   const weekDates: string[] = [];
   for (let i = 0; i < 7; i++) {
-    const d = new Date(mondayDate);
-    d.setDate(mondayDate.getDate() + i);
-    weekDates.push(d.toISOString().split('T')[0]);
+const d = new Date(mondayDate.getTime() + i * 24 * 60 * 60 * 1000);
   }
   return weekDates;
 }

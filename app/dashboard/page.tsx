@@ -10,6 +10,8 @@ import {
   setSurvivalMode,
   getComebackSystems,
   saveDailyLog,
+  setCurrentDate,
+  getTodayString,
   type LogStatus,
   type System,
   type ComebackSystem,
@@ -93,6 +95,13 @@ export default function DashboardPage() {
     } catch (error) {
       console.error('Error restarting with survival:', error);
     }
+  };
+
+  const handleTrackToday = async () => {
+    const today = getTodayString();
+    await setCurrentDate(today);
+    await new Promise(resolve => setTimeout(resolve, 100));
+    router.push('/tracker');
   };
 
   const getStatusIcon = (status: LogStatus, isSurvivalMode: boolean) => {
@@ -231,7 +240,7 @@ export default function DashboardPage() {
               <Card
                 key={system.id}
                 className={`${cardBorderClass} hover:shadow-md transition-shadow cursor-pointer`}
-                onClick={() => router.push('/tracker')}
+                onClick={handleTrackToday}
               >
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg font-medium text-slate-900 flex items-center justify-between">
@@ -264,7 +273,7 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-2 gap-3">
           <Button
-            onClick={() => router.push('/tracker')}
+            onClick={handleTrackToday}
             className="h-14 bg-[#106981] hover:bg-[#0d5468] text-white font-medium text-lg transition-all active:scale-95"
           >
             Track Today
