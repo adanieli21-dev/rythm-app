@@ -151,7 +151,16 @@ export async function getLogsForDate(dateString: string): Promise<DailyLog> {
 }
 
 export async function getTodayLogs(): Promise<DailyLog> {
-  return getLogsForDate(getTodayString());
+  try {
+    const today = getTodayString();
+    console.log('getTodayLogs: Getting logs for', today);
+    const logs = await getLogsForDate(today);
+    console.log('getTodayLogs: Found', Object.keys(logs).length, 'logs');
+    return logs;
+  } catch (error) {
+    console.error('getTodayLogs error:', error);
+    throw error;
+  }
 }
 
 export async function saveDailyLog(systemId: string, status: LogStatus): Promise<void> {
@@ -176,7 +185,10 @@ export async function saveDailyLog(systemId: string, status: LogStatus): Promise
 
 export async function getSurvivalMode(): Promise<boolean> {
   const user = await getCurrentUser();
-  if (!user) return false;
+  if (!user) {
+    console.log('getSurvivalMode: No user found');
+    return false;
+  }
 
   const { data, error } = await supabase
     .from('user_settings')
@@ -184,7 +196,12 @@ export async function getSurvivalMode(): Promise<boolean> {
     .eq('user_id', user.id)
     .maybeSingle();
 
-  if (error) throw error;
+  if (error) {
+    console.error('getSurvivalMode error:', error);
+    throw error;
+  }
+
+  console.log('getSurvivalMode: survival_mode =', data?.survival_mode || false);
   return data?.survival_mode || false;
 }
 
@@ -282,20 +299,33 @@ export async function calculateConsecutiveSkips(systemId: string): Promise<numbe
 }
 
 export async function getComebackSystems(): Promise<ComebackSystem[]> {
-  const systems = await getActiveSystems();
-  const comebackSystems: ComebackSystem[] = [];
+  try {
+    console.log('getComebackSystems: Starting...');
+    const systems = await getActiveSystems();
+    console.log('getComebackSystems: Processing', systems.length, 'systems');
+    const comebackSystems: ComebackSystem[] = [];
 
-  for (const system of systems) {
-    const skips = await calculateConsecutiveSkips(system.id);
-    if (skips >= 2) {
-      comebackSystems.push({
-        system,
-        consecutiveSkips: skips,
-      });
+    for (const system of systems) {
+      try {
+        const skips = await calculateConsecutiveSkips(system.id);
+        console.log('getComebackSystems: System', system.name, 'has', skips, 'consecutive skips');
+        if (skips >= 2) {
+          comebackSystems.push({
+            system,
+            consecutiveSkips: skips,
+          });
+        }
+      } catch (error) {
+        console.error('getComebackSystems: Error processing system', system.name, error);
+      }
     }
-  }
 
-  return comebackSystems;
+    console.log('getComebackSystems: Found', comebackSystems.length, 'comeback systems');
+    return comebackSystems;
+  } catch (error) {
+    console.error('getComebackSystems error:', error);
+    return [];
+  }
 }
 
 export function getPreviousDate(dateString: string): string {

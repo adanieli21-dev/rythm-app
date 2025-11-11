@@ -53,14 +53,46 @@ export default function DashboardPage() {
   const loadData = async () => {
     try {
       console.log('Dashboard: Starting to load data...');
-      const [systemsData, logsData, survivalData, comebackData] = await Promise.all([
-        getActiveSystems(),
-        getTodayLogs(),
-        getSurvivalMode(),
-        getComebackSystems(),
-      ]);
 
-      console.log('Dashboard: Loaded', systemsData.length, 'systems');
+      let systemsData, logsData, survivalData, comebackData;
+
+      try {
+        console.log('Dashboard: Loading systems...');
+        systemsData = await getActiveSystems();
+        console.log('Dashboard: Systems loaded:', systemsData.length);
+      } catch (err) {
+        console.error('Dashboard: Error loading systems:', err);
+        throw err;
+      }
+
+      try {
+        console.log('Dashboard: Loading today logs...');
+        logsData = await getTodayLogs();
+        console.log('Dashboard: Today logs loaded:', Object.keys(logsData).length);
+      } catch (err) {
+        console.error('Dashboard: Error loading today logs:', err);
+        throw err;
+      }
+
+      try {
+        console.log('Dashboard: Loading survival mode...');
+        survivalData = await getSurvivalMode();
+        console.log('Dashboard: Survival mode loaded:', survivalData);
+      } catch (err) {
+        console.error('Dashboard: Error loading survival mode:', err);
+        throw err;
+      }
+
+      try {
+        console.log('Dashboard: Loading comeback systems...');
+        comebackData = await getComebackSystems();
+        console.log('Dashboard: Comeback systems loaded:', comebackData.length);
+      } catch (err) {
+        console.error('Dashboard: Error loading comeback systems:', err);
+        throw err;
+      }
+
+      console.log('Dashboard: All data loaded successfully');
       setSystems(systemsData);
       setTodayLogs(logsData);
       setSurvivalModeState(survivalData);
@@ -73,8 +105,17 @@ export default function DashboardPage() {
       }));
       setError(null);
     } catch (error) {
-      console.error('Error loading data:', error);
-      setError(error instanceof Error ? error.message : 'Failed to load data');
+      console.error('Dashboard: Error loading data - Full error:', error);
+      console.error('Dashboard: Error type:', typeof error);
+      console.error('Dashboard: Error constructor:', error?.constructor?.name);
+      if (error instanceof Error) {
+        console.error('Dashboard: Error message:', error.message);
+        console.error('Dashboard: Error stack:', error.stack);
+        setError(error.message);
+      } else {
+        console.error('Dashboard: Error value:', JSON.stringify(error, null, 2));
+        setError('Failed to load data: ' + String(error));
+      }
     }
   };
 
