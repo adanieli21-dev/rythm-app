@@ -36,7 +36,10 @@ function mapDbSystemToSystem(dbSystem: any): System {
 
 export async function getSystems(): Promise<System[]> {
   const user = await getCurrentUser();
-  if (!user) return [];
+  if (!user) {
+    console.log('getSystems: No user found');
+    return [];
+  }
 
   const { data, error } = await supabase
     .from('systems')
@@ -44,13 +47,25 @@ export async function getSystems(): Promise<System[]> {
     .eq('user_id', user.id)
     .order('created_at', { ascending: true });
 
-  if (error) throw error;
+  if (error) {
+    console.error('getSystems error:', error);
+    throw error;
+  }
+
+  console.log('getSystems: Found', data?.length || 0, 'systems');
   return (data || []).map(mapDbSystemToSystem);
 }
 
 export async function getActiveSystems(): Promise<System[]> {
-  const systems = await getSystems();
-  return systems.filter(s => !s.isPaused);
+  try {
+    const systems = await getSystems();
+    const activeSystems = systems.filter(s => !s.isPaused);
+    console.log('getActiveSystems: Found', activeSystems.length, 'active systems out of', systems.length, 'total');
+    return activeSystems;
+  } catch (error) {
+    console.error('getActiveSystems error:', error);
+    return [];
+  }
 }
 
 export async function addSystem(system: Omit<System, 'id' | 'createdAt'>): Promise<System> {
@@ -197,7 +212,8 @@ export function getWeekDates(dateString: string): string[] {
 
   const weekDates: string[] = [];
   for (let i = 0; i < 7; i++) {
-const d = new Date(mondayDate.getTime() + i * 24 * 60 * 60 * 1000);
+    const d = new Date(mondayDate.getTime() + i * 24 * 60 * 60 * 1000);
+    weekDates.push(d.toISOString().split('T')[0]);
   }
   return weekDates;
 }

@@ -32,6 +32,7 @@ export default function DashboardPage() {
   const [survivalMode, setSurvivalModeState] = useState(false);
   const [currentDate, setCurrentDate] = useState('');
   const [comebackSystems, setComebackSystems] = useState<ComebackSystem[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -51,6 +52,7 @@ export default function DashboardPage() {
 
   const loadData = async () => {
     try {
+      console.log('Dashboard: Starting to load data...');
       const [systemsData, logsData, survivalData, comebackData] = await Promise.all([
         getActiveSystems(),
         getTodayLogs(),
@@ -58,6 +60,7 @@ export default function DashboardPage() {
         getComebackSystems(),
       ]);
 
+      console.log('Dashboard: Loaded', systemsData.length, 'systems');
       setSystems(systemsData);
       setTodayLogs(logsData);
       setSurvivalModeState(survivalData);
@@ -68,8 +71,10 @@ export default function DashboardPage() {
         month: 'long',
         day: 'numeric'
       }));
+      setError(null);
     } catch (error) {
       console.error('Error loading data:', error);
+      setError(error instanceof Error ? error.message : 'Failed to load data');
     }
   };
 
@@ -230,6 +235,25 @@ export default function DashboardPage() {
 
         <div className="space-y-4">
           <h2 className="text-lg font-semibold text-slate-900">Today's Systems</h2>
+          {error && (
+            <Alert className="border-red-200 bg-red-50">
+              <AlertTitle className="text-red-900">Error Loading Systems</AlertTitle>
+              <AlertDescription className="text-red-700">{error}</AlertDescription>
+            </Alert>
+          )}
+          {systems.length === 0 && !error && (
+            <Card className="border-slate-200">
+              <CardContent className="p-6 text-center">
+                <p className="text-slate-600 mb-4">No active systems yet</p>
+                <Button
+                  onClick={() => router.push('/systems')}
+                  className="bg-[#106981] hover:bg-[#0d5468] text-white"
+                >
+                  Add Your First System
+                </Button>
+              </CardContent>
+            </Card>
+          )}
           {systems.map((system) => {
             const status = todayLogs[system.id];
             const cardBorderClass = survivalMode && !status
