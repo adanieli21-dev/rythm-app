@@ -10,8 +10,6 @@ import {
   setSurvivalMode,
   getComebackSystems,
   saveDailyLog,
-  setCurrentDate,
-  getTodayString,
   type LogStatus,
   type System,
   type ComebackSystem,
@@ -32,7 +30,6 @@ export default function DashboardPage() {
   const [survivalMode, setSurvivalModeState] = useState(false);
   const [currentDate, setCurrentDate] = useState('');
   const [comebackSystems, setComebackSystems] = useState<ComebackSystem[]>([]);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -52,47 +49,13 @@ export default function DashboardPage() {
 
   const loadData = async () => {
     try {
-      console.log('Dashboard: Starting to load data...');
+      const [systemsData, logsData, survivalData, comebackData] = await Promise.all([
+        getActiveSystems(),
+        getTodayLogs(),
+        getSurvivalMode(),
+        getComebackSystems(),
+      ]);
 
-      let systemsData, logsData, survivalData, comebackData;
-
-      try {
-        console.log('Dashboard: Loading systems...');
-        systemsData = await getActiveSystems();
-        console.log('Dashboard: Systems loaded:', systemsData.length);
-      } catch (err) {
-        console.error('Dashboard: Error loading systems:', err);
-        throw err;
-      }
-
-      try {
-        console.log('Dashboard: Loading today logs...');
-        logsData = await getTodayLogs();
-        console.log('Dashboard: Today logs loaded:', Object.keys(logsData).length);
-      } catch (err) {
-        console.error('Dashboard: Error loading today logs:', err);
-        throw err;
-      }
-
-      try {
-        console.log('Dashboard: Loading survival mode...');
-        survivalData = await getSurvivalMode();
-        console.log('Dashboard: Survival mode loaded:', survivalData);
-      } catch (err) {
-        console.error('Dashboard: Error loading survival mode:', err);
-        throw err;
-      }
-
-      try {
-        console.log('Dashboard: Loading comeback systems...');
-        comebackData = await getComebackSystems();
-        console.log('Dashboard: Comeback systems loaded:', comebackData.length);
-      } catch (err) {
-        console.error('Dashboard: Error loading comeback systems:', err);
-        throw err;
-      }
-
-      console.log('Dashboard: All data loaded successfully');
       setSystems(systemsData);
       setTodayLogs(logsData);
       setSurvivalModeState(survivalData);
@@ -103,19 +66,8 @@ export default function DashboardPage() {
         month: 'long',
         day: 'numeric'
       }));
-      setError(null);
     } catch (error) {
-      console.error('Dashboard: Error loading data - Full error:', error);
-      console.error('Dashboard: Error type:', typeof error);
-      console.error('Dashboard: Error constructor:', error?.constructor?.name);
-      if (error instanceof Error) {
-        console.error('Dashboard: Error message:', error.message);
-        console.error('Dashboard: Error stack:', error.stack);
-        setError(error.message);
-      } else {
-        console.error('Dashboard: Error value:', JSON.stringify(error, null, 2));
-        setError('Failed to load data: ' + String(error));
-      }
+      console.error('Error loading data:', error);
     }
   };
 
@@ -141,13 +93,6 @@ export default function DashboardPage() {
     } catch (error) {
       console.error('Error restarting with survival:', error);
     }
-  };
-
-  const handleTrackToday = async () => {
-    const today = getTodayString();
-    await setCurrentDate(today);
-    await new Promise(resolve => setTimeout(resolve, 100));
-    router.push('/tracker');
   };
 
   const getStatusIcon = (status: LogStatus, isSurvivalMode: boolean) => {
@@ -276,25 +221,6 @@ export default function DashboardPage() {
 
         <div className="space-y-4">
           <h2 className="text-lg font-semibold text-slate-900">Today's Systems</h2>
-          {error && (
-            <Alert className="border-red-200 bg-red-50">
-              <AlertTitle className="text-red-900">Error Loading Systems</AlertTitle>
-              <AlertDescription className="text-red-700">{error}</AlertDescription>
-            </Alert>
-          )}
-          {systems.length === 0 && !error && (
-            <Card className="border-slate-200">
-              <CardContent className="p-6 text-center">
-                <p className="text-slate-600 mb-4">No active systems yet</p>
-                <Button
-                  onClick={() => router.push('/systems')}
-                  className="bg-[#106981] hover:bg-[#0d5468] text-white"
-                >
-                  Add Your First System
-                </Button>
-              </CardContent>
-            </Card>
-          )}
           {systems.map((system) => {
             const status = todayLogs[system.id];
             const cardBorderClass = survivalMode && !status
@@ -305,7 +231,7 @@ export default function DashboardPage() {
               <Card
                 key={system.id}
                 className={`${cardBorderClass} hover:shadow-md transition-shadow cursor-pointer`}
-                onClick={handleTrackToday}
+                onClick={() => router.push('/tracker')}
               >
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg font-medium text-slate-900 flex items-center justify-between">
@@ -338,7 +264,7 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-2 gap-3">
           <Button
-            onClick={handleTrackToday}
+            onClick={() => router.push('/tracker')}
             className="h-14 bg-[#106981] hover:bg-[#0d5468] text-white font-medium text-lg transition-all active:scale-95"
           >
             Track Today
