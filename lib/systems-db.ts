@@ -222,29 +222,22 @@ user_id: user.id,
 }
 
 export function getWeekDates(dateString: string): string[] {
-  // Parse the date string directly without creating intermediate Date objects
-  const parts = dateString.split('-');
-  const year = parseInt(parts[0], 10);
-  const month = parseInt(parts[1], 10);
-  const day = parseInt(parts[2], 10);
+  const [year, month, day] = dateString.split('-').map(Number);
   
-  // Create date using UTC to avoid timezone issues
-  const date = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
-  const dayOfWeek = date.getUTCDay();
+  // Create date at noon local time to avoid timezone issues
+  const date = new Date(year, month - 1, day, 12, 0, 0);
+  const dayOfWeek = date.getDay();
   
   // Calculate how many days to go back to Monday
   const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
   
   const weekDates: string[] = [];
   for (let i = 0; i < 7; i++) {
-    // Calculate the day offset from the input date
-    const dayOffset = i - daysToMonday;
-    const targetDate = new Date(Date.UTC(year, month - 1, day + dayOffset, 12, 0, 0));
-    
-    // Format as YYYY-MM-DD
-    const y = targetDate.getUTCFullYear();
-    const m = String(targetDate.getUTCMonth() + 1).padStart(2, '0');
-    const d = String(targetDate.getUTCDate()).padStart(2, '0');
+    // Create a new date for each day of the week
+    const weekDay = new Date(year, month - 1, day - daysToMonday + i, 12, 0, 0);
+    const y = weekDay.getFullYear();
+    const m = String(weekDay.getMonth() + 1).padStart(2, '0');
+    const d = String(weekDay.getDate()).padStart(2, '0');
     weekDates.push(`${y}-${m}-${d}`);
   }
   
