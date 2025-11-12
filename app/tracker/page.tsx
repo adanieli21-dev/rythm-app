@@ -89,7 +89,7 @@ function WeekCalendar({ currentDate, systems, logs }: { currentDate: string; sys
               {WEEKDAYS[index]}
             </span>
             <span className={`text-sm font-semibold ${isCurrent ? 'text-white' : 'text-slate-900'}`}>
-              {new Date(date).getDate()}
+              {date.split('-')[2]}
             </span>
             {hasAnyLog && (
               <div className="flex gap-1">
