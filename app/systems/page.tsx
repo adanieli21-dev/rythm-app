@@ -338,13 +338,18 @@ export default function SystemsPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsEditOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsEditOpen(false)}
+              >
                 Cancel
               </Button>
               <Button
+                type="button"
                 onClick={handleSave}
                 disabled={!formName.trim() || !formTrigger.trim() || !formFull.trim() || !formSurvival.trim()}
-                className="bg-[#106981] hover:bg-[#0d5468] text-white"
+                className="bg-[#106981] hover:bg-[#0d5468] text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {editingSystem ? 'Save Changes' : 'Add System'}
               </Button>

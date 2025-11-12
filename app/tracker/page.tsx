@@ -34,14 +34,20 @@ function getStatusDotColor(status: LogStatus): string {
 }
 
 function formatDateDisplay(dateString: string): string {
-  const date = new Date(dateString);
-  const today = new Date(getTodayString());
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
+  const [year, month, day] = dateString.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  const today = getTodayString();
 
-  if (dateString === getTodayString()) {
+  if (dateString === today) {
     return 'Today';
-  } else if (dateString === yesterday.toISOString().split('T')[0]) {
+  }
+
+  const [yY, mY, dY] = today.split('-').map(Number);
+  const yesterday = new Date(yY, mY - 1, dY);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+
+  if (dateString === yesterdayStr) {
     return 'Yesterday';
   }
 
@@ -49,7 +55,8 @@ function formatDateDisplay(dateString: string): string {
 }
 
 function formatFullDateDisplay(dateString: string): string {
-  const date = new Date(dateString);
+  const [year, month, day] = dateString.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
   return date.toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
