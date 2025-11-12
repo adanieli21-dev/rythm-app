@@ -36,10 +36,7 @@ function mapDbSystemToSystem(dbSystem: any): System {
 
 export async function getSystems(): Promise<System[]> {
   const user = await getCurrentUser();
-  if (!user) {
-    console.log('getSystems: No user found');
-    return [];
-  }
+  if (!user) return [];
 
   const { data, error } = await supabase
     .from('systems')
@@ -47,25 +44,13 @@ export async function getSystems(): Promise<System[]> {
     .eq('user_id', user.id)
     .order('created_at', { ascending: true });
 
-  if (error) {
-    console.error('getSystems error:', error);
-    throw error;
-  }
-
-  console.log('getSystems: Found', data?.length || 0, 'systems');
+  if (error) throw error;
   return (data || []).map(mapDbSystemToSystem);
 }
 
 export async function getActiveSystems(): Promise<System[]> {
-  try {
-    const systems = await getSystems();
-    const activeSystems = systems.filter(s => !s.isPaused);
-    console.log('getActiveSystems: Found', activeSystems.length, 'active systems out of', systems.length, 'total');
-    return activeSystems;
-  } catch (error) {
-    console.error('getActiveSystems error:', error);
-    return [];
-  }
+  const systems = await getSystems();
+  return systems.filter(s => !s.isPaused);
 }
 
 export async function addSystem(system: Omit<System, 'id' | 'createdAt'>): Promise<System> {
@@ -123,11 +108,7 @@ export async function deleteSystem(id: string): Promise<void> {
 }
 
 export function getTodayString(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return new Date().toISOString().split('T')[0];
 }
 
 export async function getLogsForDate(dateString: string): Promise<DailyLog> {
@@ -151,16 +132,7 @@ export async function getLogsForDate(dateString: string): Promise<DailyLog> {
 }
 
 export async function getTodayLogs(): Promise<DailyLog> {
-  try {
-    const today = getTodayString();
-    console.log('getTodayLogs: Getting logs for', today);
-    const logs = await getLogsForDate(today);
-    console.log('getTodayLogs: Found', Object.keys(logs).length, 'logs');
-    return logs;
-  } catch (error) {
-    console.error('getTodayLogs error:', error);
-    throw error;
-  }
+  return getLogsForDate(getTodayString());
 }
 
 export async function saveDailyLog(systemId: string, status: LogStatus): Promise<void> {
@@ -185,10 +157,7 @@ export async function saveDailyLog(systemId: string, status: LogStatus): Promise
 
 export async function getSurvivalMode(): Promise<boolean> {
   const user = await getCurrentUser();
-  if (!user) {
-    console.log('getSurvivalMode: No user found');
-    return false;
-  }
+  if (!user) return false;
 
   const { data, error } = await supabase
     .from('user_settings')
@@ -196,12 +165,7 @@ export async function getSurvivalMode(): Promise<boolean> {
     .eq('user_id', user.id)
     .maybeSingle();
 
-  if (error) {
-    console.error('getSurvivalMode error:', error);
-    throw error;
-  }
-
-  console.log('getSurvivalMode: survival_mode =', data?.survival_mode || false);
+  if (error) throw error;
   return data?.survival_mode || false;
 }
 
@@ -212,7 +176,7 @@ export async function setSurvivalMode(enabled: boolean): Promise<void> {
   const { error } = await supabase
     .from('user_settings')
     .upsert({
-user_id: user.id,
+      user_id: user.id,
       survival_mode: enabled,
     }, {
       onConflict: 'user_id',
@@ -229,7 +193,8 @@ export function getWeekDates(dateString: string): string[] {
 
   const weekDates: string[] = [];
   for (let i = 0; i < 7; i++) {
-    const d = new Date(mondayDate.getTime() + i * 24 * 60 * 60 * 1000);
+    const d = new Date(mondayDate);
+    d.setDate(mondayDate.getDate() + i);
     weekDates.push(d.toISOString().split('T')[0]);
   }
   return weekDates;
@@ -299,33 +264,20 @@ export async function calculateConsecutiveSkips(systemId: string): Promise<numbe
 }
 
 export async function getComebackSystems(): Promise<ComebackSystem[]> {
-  try {
-    console.log('getComebackSystems: Starting...');
-    const systems = await getActiveSystems();
-    console.log('getComebackSystems: Processing', systems.length, 'systems');
-    const comebackSystems: ComebackSystem[] = [];
+  const systems = await getActiveSystems();
+  const comebackSystems: ComebackSystem[] = [];
 
-    for (const system of systems) {
-      try {
-        const skips = await calculateConsecutiveSkips(system.id);
-        console.log('getComebackSystems: System', system.name, 'has', skips, 'consecutive skips');
-        if (skips >= 2) {
-          comebackSystems.push({
-            system,
-            consecutiveSkips: skips,
-          });
-        }
-      } catch (error) {
-        console.error('getComebackSystems: Error processing system', system.name, error);
-      }
+  for (const system of systems) {
+    const skips = await calculateConsecutiveSkips(system.id);
+    if (skips >= 2) {
+      comebackSystems.push({
+        system,
+        consecutiveSkips: skips,
+      });
     }
-
-    console.log('getComebackSystems: Found', comebackSystems.length, 'comeback systems');
-    return comebackSystems;
-  } catch (error) {
-    console.error('getComebackSystems error:', error);
-    return [];
   }
+
+  return comebackSystems;
 }
 
 export function getPreviousDate(dateString: string): string {
