@@ -167,10 +167,18 @@ export default function SyncPage() {
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div>
+         <div className="flex-1">
             <h1 className="text-2xl font-bold text-slate-900">Weekly Sync</h1>
             <p className="text-sm text-slate-600">Review, reflect, and adjust</p>
           </div>
+          <Button
+            variant="outline"
+            onClick={() => router.push('/sync-history')}
+            className="text-slate-600 hover:text-slate-900 border-slate-300"
+          >
+            View History
+          </Button>
+        </div>
         </header>
 
         {step === 'complete' ? (
