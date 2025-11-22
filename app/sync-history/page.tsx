@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { isAuthenticated } from '@/lib/auth';
-import { getAllWeeklySyncs } from '@/lib/systems-db';
+import { getWeeklySyncs } from '@/lib/systems-db';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ArrowLeft, Calendar, TrendingUp, Target, Lightbulb } from 'lucide-react';
@@ -38,7 +38,7 @@ export default function SyncHistoryPage() {
       return;
     }
 
-    const data = await getAllWeeklySyncs();
+    const data = await getWeeklySyncs();
     setSyncs(data);
     setLoading(false);
   };
