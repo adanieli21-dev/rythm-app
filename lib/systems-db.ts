@@ -397,23 +397,115 @@ export async function saveWeeklySync(syncData: {
 }): Promise<void> {
   const user = await getCurrentUser();
   if (!user) throw new Error('Not authenticated');
-
-  const { error } = await supabase
+  
+  console.log('💾 Saving weekly sync...');
+  console.log('📝 Week ending:', syncData.weekEnding);
+  console.log('📝 Data:', syncData);
+  
+  // Check if record exists for this week
+  const { data: existing, error: selectError } = await supabase
     .from('weekly_syncs')
-    .insert({
-      user_id: user.id,
-      week_ending: syncData.weekEnding,
-      win: syncData.win,
-      patterns: syncData.patterns,
-      hard_days: syncData.hardDays,
-      adjust_system: syncData.adjustSystem,
-      adjust_description: syncData.adjustDescription,
-      intention: syncData.intention,
-    });
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('week_start', syncData.weekEnding)
+    .maybeSingle();
 
-  if (error) throw error;
+  if (selectError) {
+    console.error('❌ Error checking existing record:', selectError);
+    throw selectError;
+  }
+
+  let result;
+  
+  if (existing) {
+    // Update existing record
+    console.log('📝 Updating existing record:', existing.id);
+    result = await supabase
+      .from('weekly_syncs')
+      .update({
+        win: syncData.win,
+        pattern: syncData.patterns, // Note: DB column is 'pattern' (singular)
+        hard_days: syncData.hardDays,
+        adjusted_system_id: syncData.adjustSystem,
+        adjustment_note: syncData.adjustDescription, // FIXED: was adjust_description
+        intention: syncData.intention,
+      })
+      .eq('id', existing.id);
+  } else {
+    // Insert new record
+    console.log('✨ Creating new record');
+    console.log('🔍 About to insert with data:', {
+    user_id: user.id,
+    week_start: syncData.weekEnding,
+    win: syncData.win,
+    pattern: syncData.patterns,
+    hard_days: syncData.hardDays,
+    adjusted_system_id: syncData.adjustSystem,
+    adjustment_note: syncData.adjustDescription,
+    intention: syncData.intention});
+    result = await supabase
+      .from('weekly_syncs')
+      .insert({
+        user_id: user.id,
+        week_start: syncData.weekEnding,
+        win: syncData.win,
+        pattern: syncData.patterns,
+        hard_days: syncData.hardDays,
+        adjusted_system_id: syncData.adjustSystem,
+        adjustment_note: syncData.adjustDescription, // FIXED: was adjust_description
+        intention: syncData.intention,
+      });
+  }
+  
+  if (result.error) {
+    console.error('❌ Error saving weekly sync:', result.error);
+    throw result.error;
+  }
+  
+  console.log('✅ Weekly sync saved successfully!');
 }
+export async function loadWeeklySync(weekStart: string): Promise<{
+  win: string;
+  patterns: string;
+  hardDays: string;
+  adjustSystem: string;
+  adjustDescription: string;
+  intention: string;
+} | null> {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('Not authenticated');
+  
+  console.log('📂 Loading weekly sync for week:', weekStart);
+  
+  const { data, error } = await supabase
+    .from('weekly_syncs')
+    .select('*')
+    .eq('user_id', user.id)
+    .eq('week_start', weekStart)
+    .maybeSingle();
 
+  if (error) {
+    console.error('❌ Error loading weekly sync:', error);
+    throw error;
+  }
+
+  if (!data) {
+    console.log('ℹ️ No weekly sync found for this week (new week)');
+    return null;
+  }
+
+  console.log('✅ Loaded weekly sync:', data);
+  
+  // Map database columns to app format
+  return {
+    win: data.win || '',
+    patterns: data.pattern || '', // Note: DB column is 'pattern' (singular)
+    hardDays: data.hard_days || '',
+    adjustSystem: data.adjusted_system_id || '',
+    adjustDescription: data.adjustment_note || '',
+    intention: data.intention || '',
+  };
+}
 export async function getWeeklySyncs(): Promise<any[]> {
   const user = await getCurrentUser();
   if (!user) return [];

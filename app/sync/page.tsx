@@ -9,6 +9,7 @@ import {
   getLogsForDate,
   getTodayString,
   saveWeeklySync,
+  loadWeeklySync,
   type LogStatus,
   type System,
 } from '@/lib/systems-db';
