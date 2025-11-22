@@ -178,7 +178,6 @@ export default function SyncPage() {
           >
             View History
           </Button>
-        </div>
         </header>
 
         {step === 'complete' ? (
